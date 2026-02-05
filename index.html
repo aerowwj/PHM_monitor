@@ -2,7 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 新增：视口设置，用于适配移动端屏幕 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LX-1 无人机旋翼健康监测终端</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -24,106 +23,96 @@
             color: var(--text-main);
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0; padding: 0;
-            height: 100vh;
+            height: 100vh; /* 强制占满视口 */
+            width: 100vw;
             display: flex; flex-direction: column;
-            overflow: hidden; /* 默认桌面端禁止滚动 */
+            overflow: hidden; /* 禁止全局滚动 */
         }
 
         header {
             background: var(--header-bg);
-            /* 修改：高度改为最小高度，允许移动端换行撑开 */
-            min-height: 70px;
+            /* 弹性高度，但尽量紧凑 */
+            flex: 0 0 auto;
             display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 25px;
+            padding: 8px 15px;
             border-bottom: 1px solid #334155;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            flex-shrink: 0;
-            flex-wrap: wrap; /* 允许换行 */
+            z-index: 10;
             gap: 10px;
         }
 
         h1 {
-            font-size: 1.6rem;
+            font-size: clamp(1rem, 1.5vw, 1.6rem);
             color: var(--accent); margin: 0;
-            font-weight: 700; letter-spacing: 1.5px;
+            font-weight: 700; letter-spacing: 1px;
             text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
             white-space: nowrap;
         }
 
-        .header-left { display: flex; align-items: center; gap: 20px; }
-        .header-right { display: flex; align-items: center; gap: 20px; font-size: 1.1rem; flex-wrap: wrap; justify-content: flex-end;}
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .header-right { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; flex-wrap: nowrap; }
 
         .status-item {
-            display: flex; align-items: center; gap: 10px;
+            display: flex; align-items: center; gap: 6px;
             background: rgba(0,0,0,0.25);
-            padding: 6px 15px; border-radius: 6px;
+            padding: 4px 10px; border-radius: 4px;
             white-space: nowrap;
+            font-size: 0.85rem;
         }
 
         .status-indicator {
-            width: 12px; height: 12px; border-radius: 50%;
+            width: 10px; height: 10px; border-radius: 50%;
             background-color: var(--bad); transition: all 0.3s;
         }
         .status-active { background-color: var(--good); box-shadow: 0 0 8px var(--good); }
 
-        .btn-info {
+        .btn-info, .btn-rec, .btn-download {
             background: linear-gradient(135deg, #334155, #1e293b);
             color: var(--text-main); border: 1px solid #475569;
-            padding: 6px 16px; border-radius: 6px; cursor: pointer;
-            font-size: 1rem; transition: all 0.2s;
+            padding: 4px 10px; border-radius: 4px; cursor: pointer;
+            font-size: 0.85rem; transition: all 0.2s;
             white-space: nowrap;
+            display: flex; align-items: center; gap: 5px;
         }
-        .btn-info:hover { background: #475569; transform: translateY(-1px); }
+        .btn-info:hover, .btn-rec:hover, .btn-download:hover { background: #475569; transform: translateY(-1px); }
 
-        .btn-rec {
-            background: linear-gradient(135deg, #334155, #1e293b);
-            border: 1px solid #475569;
-            color: #94a3b8;
-            display: flex; align-items: center; gap: 8px;
-        }
-        .btn-rec .dot { background: #94a3b8; width: 10px; height: 10px; border-radius: 50%; transition: 0.3s; }
-
+        .btn-rec .dot { background: #94a3b8; width: 8px; height: 8px; border-radius: 50%; transition: 0.3s; }
         .btn-rec.active { border-color: var(--bad); background: rgba(239, 68, 68, 0.1); color: var(--bad); }
         .btn-rec.active .dot { background: var(--bad); box-shadow: 0 0 8px var(--bad); animation: pulse 1s infinite; }
-
         .btn-rec.pending { border-color: var(--warn); color: var(--warn); cursor: wait; }
         .btn-rec.pending .dot { background: var(--warn); }
-
-        .btn-download {
-            background: linear-gradient(135deg, #334155, #1e293b);
-            border: 1px solid #475569;
-            color: var(--text-main);
-            display: flex; align-items: center; gap: 8px;
-        }
-        .btn-download:hover { background: #475569; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
         .main-content {
-            flex: 1;
-            padding: 15px;
-            overflow-y: hidden; /* 默认隐藏滚动条 */
+            flex: 1; /* 占据剩余空间 */
+            padding: 10px;
+            overflow: hidden; /* 核心：禁止滚动，强迫内容适应 */
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
         .grid-container {
             display: grid;
+            /* 默认桌面：6列 x 2行 */
             grid-template-columns: repeat(6, 1fr);
             grid-template-rows: repeat(2, 1fr);
-            gap: 15px;
-            height: 100%;
-            /* 最小高度保护 */
-            min-height: 500px;
+            gap: 10px;
+            width: 100%;
+            height: 100%; /* 填满父容器 */
         }
 
         .rotor-card {
             background: var(--card-bg);
             border: 1px solid #2d3f58;
-            border-radius: 10px;
-            padding: 1.5vh 1vw;
+            border-radius: 8px;
+            padding: 8px;
             display: flex; flex-direction: column; justify-content: space-between;
             position: relative; transition: all 0.3s;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-height: 0; /* 允许 flex/grid 项目压缩到内容以下 */
+            min-width: 0;
         }
 
         .card-offline {
@@ -132,55 +121,65 @@
 
         .card-header {
             display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 2px;
         }
         .rotor-id {
             font-weight: 700; color: var(--text-muted);
-            font-size: clamp(1rem, 1.2vw, 1.5rem);
+            font-size: clamp(0.7rem, 1vw, 1.2rem); /* 动态字体 */
+            white-space: nowrap;
         }
 
-        .online-dot { width: 10px; height: 10px; border-radius: 50%; background: #333; }
-        .dot-on { background: var(--good); box-shadow: 0 0 8px var(--good); }
+        .online-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; }
+        .dot-on { background: var(--good); box-shadow: 0 0 6px var(--good); }
 
         .score-section {
             text-align: center; flex: 1;
             display: flex; flex-direction: column; justify-content: center;
+            min-height: 0; /* 允许压缩 */
         }
         .score-val {
-            font-size: clamp(3rem, 8vh, 6rem);
+            /* 关键：使用 vh/vmin 动态调整大字号，确保不溢出 */
+            font-size: clamp(2rem, 8vmin, 5rem);
             font-weight: 800; line-height: 1;
             font-family: 'Segoe UI', sans-serif;
             text-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         .status-label {
-            font-size: clamp(0.9rem, 1.5vh, 1.2rem);
-            margin-top: 5px; padding: 4px 12px;
-            border-radius: 12px; display: inline-block;
+            font-size: clamp(0.7rem, 1.2vh, 1rem);
+            margin-top: 2px; padding: 2px 8px;
+            border-radius: 10px; display: inline-block;
             background: rgba(0,0,0,0.3); font-weight: bold;
+            white-space: nowrap;
         }
 
         .metrics-grid {
             display: grid; grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            gap: 4px;
             background: rgba(0,0,0,0.25);
-            padding: 8px; border-radius: 8px;
+            padding: 4px; border-radius: 6px;
+            margin-top: auto; /* 推到底部 */
         }
 
-        .metric-box { display: flex; flex-direction: column; align-items: center; }
+        .metric-box { display: flex; flex-direction: column; align-items: center; overflow: hidden; }
         .m-title {
-            font-size: clamp(0.7rem, 0.9vw, 0.9rem);
+            font-size: 0.65rem;
             color: var(--text-muted); text-transform: uppercase;
+            white-space: nowrap;
+            transform: scale(0.9); /* 稍微缩小标题 */
         }
         .m-val {
             font-family: 'Courier New', monospace;
-            font-size: clamp(0.9rem, 1.2vw, 1.4rem);
+            font-size: clamp(0.75rem, 1.2vw, 1.1rem);
             font-weight: bold; color: #fff;
+            white-space: nowrap;
         }
-        .m-unit { font-size: 0.7em; color: #64748b; margin-left: 2px; }
+        .m-unit { font-size: 0.7em; color: #64748b; margin-left: 1px; }
 
         .c-good { color: var(--good); }
         .c-warn { color: var(--warn); }
         .c-bad { color: var(--bad); }
 
+        /* 模态框样式维持不变 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8);
@@ -189,7 +188,7 @@
         }
         .modal-content {
             background: #1e293b;
-            width: 600px; max-width: 95%; /* 修改适配移动端 */
+            width: 600px; max-width: 95%;
             max-height: 90vh;
             border-radius: 12px;
             border: 1px solid #475569;
@@ -204,97 +203,89 @@
         }
         .modal-header h2 { margin: 0; font-size: 1.1rem; color: var(--accent); }
         .close-btn { background: none; border: none; color: #aaa; font-size: 1.8rem; cursor: pointer; }
-
         .modal-body {
-            padding: 15px 25px;
-            overflow-y: auto;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            color: #cbd5e1;
+            padding: 15px 25px; overflow-y: auto;
+            font-size: 0.9rem; line-height: 1.4; color: #cbd5e1;
         }
-        .modal-body h3 {
-            font-size: 0.95rem; color: #fff;
-            margin: 10px 0 4px 0;
-            border-left: 4px solid var(--accent); padding-left: 8px;
-        }
+        .modal-body h3 { font-size: 0.95rem; color: #fff; margin: 10px 0 4px 0; border-left: 4px solid var(--accent); padding-left: 8px; }
         .modal-body p { margin: 0 0 8px 0; }
-        .formula-box {
-            background: #0b1120; padding: 6px 10px;
-            border-radius: 4px; font-family: monospace;
-            color: #a5b4fc; margin-bottom: 8px; font-size: 0.85rem;
-            word-break: break-all; /* 防止长代码撑破容器 */
-        }
-        .code-box {
-            background: #0b1120; padding: 8px 12px;
-            border-radius: 4px; font-family: 'Courier New', monospace;
-            color: #a5b4fc; margin-bottom: 10px; font-size: 0.8rem;
-            border-left: 3px solid var(--accent);
-            white-space: pre-wrap; /* 允许代码换行 */
-        }
+        .formula-box { background: #0b1120; padding: 6px 10px; border-radius: 4px; font-family: monospace; color: #a5b4fc; margin-bottom: 8px; font-size: 0.85rem; word-break: break-all; }
+        .code-box { background: #0b1120; padding: 8px 12px; border-radius: 4px; font-family: 'Courier New', monospace; color: #a5b4fc; margin-bottom: 10px; font-size: 0.8rem; border-left: 3px solid var(--accent); white-space: pre-wrap; }
         ul { margin: 0; padding-left: 20px; }
         li { margin-bottom: 2px; }
         .highlight { color: #fbbf24; font-weight: bold; }
         .param { color: #7dd3fc; }
 
-        /* ---- 媒体查询：适配平板和手机 ---- */
+        /* ---- 媒体查询：响应式优化布局 ---- */
 
         /* 平板尺寸 (<1200px) */
         @media (max-width: 1200px) {
-            body {
-                height: auto;
-                min-height: 100vh;
-                overflow-y: auto; /* 允许页面滚动 */
-            }
-            .main-content {
-                overflow-y: visible;
-            }
+            body { overflow: hidden; /* 确保平板也不滚动 */ }
             .grid-container {
-                /* 改为4列 */
+                /* 平板改为 4列 x 3行，填满屏幕 */
                 grid-template-columns: repeat(4, 1fr);
-                grid-template-rows: auto; /* 高度自动 */
-                gap: 15px;
-                height: auto;
+                grid-template-rows: repeat(3, 1fr);
             }
-            .rotor-card {
-                min-height: 240px; /* 保证卡片有足够高度 */
-                padding: 10px;
-            }
-            h1 { font-size: 1.4rem; }
-            .score-val { font-size: 3.5rem; }
+            .score-val { font-size: clamp(2rem, 6vh, 4rem); }
         }
 
         /* 手机尺寸 (<768px) */
         @media (max-width: 768px) {
+            /* 头部调整 */
             header {
-                flex-direction: column;
-                align-items: stretch;
-                height: auto;
-                padding: 15px;
+                padding: 5px 10px;
+                flex-wrap: wrap; /* 允许折行但尽量挤在一行 */
+                gap: 5px;
             }
+            h1 { width: 100%; text-align: center; margin-bottom: 2px; }
             .header-left, .header-right {
-                justify-content: space-between;
-                width: 100%;
+                width: 100%; justify-content: space-between;
             }
-            h1 { font-size: 1.3rem; text-align: center; width: 100%; }
+            .header-right { padding-top: 2px; border-top: 1px solid #334155; }
+            
+            /* 隐藏非必要文本以节省空间 */
+            #latency { font-size: 0.8rem; }
+            .btn-info, .btn-rec, .btn-download { padding: 3px 8px; font-size: 0.75rem; }
 
+            .main-content { padding: 5px; }
+
+            /* 核心网格布局：手机端 */
             .grid-container {
-                /* 改为2列 */
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
+                /* 改为 3列 x 4行 = 12个
+                   相比 2列x6行，3列x4行在垂直方向上每个卡片更高，
+                   更能容纳 标题+分数+指标 的纵向布局 */
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(4, 1fr);
+                gap: 5px;
             }
-            .rotor-card {
-                min-height: 200px;
-                padding: 8px;
-            }
-            /* 字体大小微调 */
-            .rotor-id { font-size: 1rem; }
-            .score-val { font-size: 3rem; }
-            .status-label { font-size: 0.9rem; }
-            .m-title { font-size: 0.7rem; }
-            .m-val { font-size: 1rem; }
 
-            /* 按钮适配 */
-            .btn-info { padding: 8px 12px; font-size: 0.9rem; }
+            .rotor-card {
+                padding: 4px;
+                border-radius: 6px;
+            }
+
+            /* 卡片内部微调 */
+            .rotor-id { font-size: 0.7rem; }
+            .online-dot { width: 6px; height: 6px; }
+            
+            .score-val { 
+                /* 字体随视口高度缩放 */
+                font-size: 3.5vh; 
+                margin: 2px 0;
+            }
+            .status-label { 
+                font-size: 0.6rem; 
+                padding: 1px 6px; 
+            }
+
+            .metrics-grid {
+                /* 手机端非常窄，指标名和值需要极度紧凑 */
+                padding: 2px;
+                gap: 2px;
+            }
+            .m-title { font-size: 0.5rem; transform: scale(0.85); }
+            .m-val { font-size: 0.75rem; }
+            .m-unit { display: none; /* 手机端隐藏单位以节省空间 */ }
         }
     </style>
 </head>
@@ -310,23 +301,19 @@
         </div>
 
         <div class="header-right">
-            <!-- 新增：下载按钮 -->
             <button id="btn-download" class="btn-info btn-download" onclick="downloadData()" title="下载存储数据">
-                ⬇️ 下载数据
+                ⬇️ 下载
             </button>
-
-            <!-- 存储按钮 (已改为"机载存储") -->
             <button id="btn-rec" class="btn-info btn-rec" onclick="toggleRec()">
-                <div class="dot"></div> <span id="rec-txt">机载存储: ON</span>
+                <div class="dot"></div> <span id="rec-txt">存储:ON</span>
             </button>
-
             <div class="status-item">
-                <span>更新: <span id="last-time" style="color:#fff; font-family:monospace;">--:--:--</span></span>
+                <span><span id="last-time" style="color:#fff; font-family:monospace;">--:--</span></span>
             </div>
             <div class="status-item">
-                <span>时延: <span id="latency" style="color:var(--warn); font-weight:bold; font-family:monospace;">0</span> ms</span>
+                <span><span id="latency" style="color:var(--warn); font-weight:bold; font-family:monospace;">0</span>ms</span>
             </div>
-            <button class="btn-info" onclick="toggleModal(true)">数据说明</button>
+            <button class="btn-info" onclick="toggleModal(true)">说明</button>
         </div>
     </header>
 
@@ -438,20 +425,19 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
         const MQTT_BROKER = 'wss://broker.emqx.io:8084/mqtt';
         const MQTT_TOPIC  = 'user_9527/drone_project/vibration_status';
         const MQTT_CMD    = 'user_9527/drone_project/cmd';
-        const TIMEOUT_MS  = 5_000;           // 5 s 未更新视为掉线
-        const STORAGE_INTERVAL = 1000;       // 1Hz 存储频率
+        const TIMEOUT_MS  = 5_000;           
+        const STORAGE_INTERVAL = 1000;       
 
-        const lastSeen    = {};              // { id: { online:bool, ts:number } }
-        const sensorData  = new Array(13);   // 索引1-12存储传感器数据
-        const storedData  = [];              // 存储的数据行
+        const lastSeen    = {};              
+        const sensorData  = new Array(13);   
+        const storedData  = [];              
 
         let client = null;
-        let isRec = true;                    // 默认开启存储
+        let isRec = true;                    
         let isPending = false;
         let storageTimer = null;
         let startTime = Date.now();
 
-        // 状态映射：中文状态 -> 英文状态（用于存储）
         const statusMap = {
             '优秀': 'EXCELLENT',
             '良好': 'GOOD',
@@ -460,7 +446,6 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
             '离线': 'OFFLINE'
         };
 
-        /* ---- 初始化 12 张卡片 ---- */
         const container = document.getElementById('app');
         for (let i = 1; i <= 12; i++) {
             container.innerHTML += `
@@ -475,19 +460,19 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
                     </div>
                     <div class="metrics-grid">
                         <div class="metric-box">
-                            <span class="m-title">Acc RMS</span>
+                            <span class="m-title">Acc</span>
                             <span class="m-val"><span id="rms-${i}">0.00</span><span class="m-unit">g</span></span>
                         </div>
                         <div class="metric-box">
-                            <span class="m-title">Gyro RMS</span>
+                            <span class="m-title">Gyro</span>
                             <span class="m-val"><span id="gyro-${i}">0.0</span><span class="m-unit"></span></span>
                         </div>
                         <div class="metric-box">
-                            <span class="m-title">Dom Freq</span>
+                            <span class="m-title">Freq</span>
                             <span class="m-val"><span id="freq-${i}">0.0</span><span class="m-unit">Hz</span></span>
                         </div>
                         <div class="metric-box">
-                            <span class="m-title">Kurtosis</span>
+                            <span class="m-title">Kurt</span>
                             <span class="m-val" id="kurt-${i}">0.00</span>
                         </div>
                     </div>
@@ -503,26 +488,22 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
             };
         }
 
-        /* ---- 初始化存储 ---- */
         function initStorage() {
             if (storageTimer) {
                 clearInterval(storageTimer);
             }
-
             if (isRec) {
                 storageTimer = setInterval(storeCurrentData, STORAGE_INTERVAL);
                 console.log('数据存储已启动 (1Hz)');
             }
         }
 
-        /* ---- 存储当前数据 ---- */
         function storeCurrentData() {
-            const timestamp = Date.now() - startTime; // 相对时间，减少文件大小
+            const timestamp = Date.now() - startTime; 
             const row = [timestamp];
 
             for (let i = 1; i <= 12; i++) {
                 const data = sensorData[i];
-                // 将中文状态转换为英文状态进行存储
                 const statusForStorage = statusMap[data.status] || data.status;
                 row.push(
                     data.rms_acc.toFixed(2),
@@ -530,26 +511,23 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
                     data.freq.toFixed(1),
                     data.kurtosis.toFixed(2),
                     data.score,
-                    statusForStorage  // 存储英文状态
+                    statusForStorage  
                 );
             }
 
             storedData.push(row.join(','));
 
-            // 限制内存占用，最多保留10000行数据
             if (storedData.length > 10000) {
                 storedData.splice(0, 1000);
             }
         }
 
-        /* ---- 下载数据 ---- */
         function downloadData() {
             if (storedData.length === 0) {
                 alert('没有可下载的数据');
                 return;
             }
 
-            // 创建CSV头部（使用BOM确保Excel正确识别UTF-8）
             const header = ['timestamp_ms'];
             for (let i = 1; i <= 12; i++) {
                 header.push(
@@ -567,7 +545,6 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
                 ...storedData
             ].join('\n');
 
-            // 添加UTF-8 BOM，确保Excel正确打开中文字符
             const BOM = '\uFEFF';
             const blob = new Blob([BOM + csvContent], {
                 type: 'text/csv;charset=utf-8;'
@@ -594,8 +571,6 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
             if (e.target.id === 'infoModal') toggleModal(false);
         });
 
-        /* ---- MQTT ---- */
-        // 修改：添加随机 Client ID，确保多客户端（电脑+手机）不会冲突
         const options = {
             clientId: 'monitor_client_' + Math.random().toString(16).substring(2, 8)
         };
@@ -606,16 +581,12 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
             document.getElementById('conn-text').innerText = '在线';
             document.getElementById('conn-text').style.color = '#22c55e';
             client.subscribe(MQTT_TOPIC);
-
-            // 连接成功后启动存储
             initStorage();
         });
         client.on('offline', () => {
             document.getElementById('conn-dot').classList.remove('status-active');
             document.getElementById('conn-text').innerText = '离线';
             document.getElementById('conn-text').style.color = '#ef4444';
-
-            // 离线时停止存储
             if (storageTimer) {
                 clearInterval(storageTimer);
                 storageTimer = null;
@@ -628,19 +599,16 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
                 document.getElementById('latency').innerText = Math.max(0, Date.now() - serverTs);
                 document.getElementById('last-time').innerText = new Date().toLocaleTimeString();
 
-                // 同步录制状态
                 if(msg.rec !== undefined && !isPending && msg.rec !== isRec) {
                     isRec = msg.rec;
                     updateRecBtn(isRec, false);
-                    initStorage(); // 更新存储状态
+                    initStorage(); 
                 }
 
                 if (!msg.data) return;
 
                 msg.data.forEach(r => {
                     lastSeen[r.id] = { online: r.online, ts: Date.now() };
-
-                    // 更新内存中的数据
                     if (r.online) {
                         sensorData[r.id] = {
                             rms_acc: r.rms_acc,
@@ -648,7 +616,7 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
                             freq: r.freq,
                             kurtosis: r.kurtosis,
                             score: r.score,
-                            status: r.status,  // 保持中文状态用于显示
+                            status: r.status,  
                             online: true
                         };
                     } else {
@@ -662,13 +630,11 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
                             online: false
                         };
                     }
-
-                    updateCard(r);          // 实时刷新数据
+                    updateCard(r);          
                 });
             } catch (_) {}
         });
 
-        /* ---- 数据刷新 ---- */
         function updateCard(r) {
             const id = r.id;
             const card   = document.getElementById(`card-${id}`);
@@ -676,7 +642,6 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
             const score  = document.getElementById(`score-${id}`);
             const status = document.getElementById(`status-${id}`);
 
-            /* 1. 离线 */
             if (!r.online) {
                 dot.classList.remove('dot-on');
                 score.innerText  = '0';
@@ -688,7 +653,6 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
                 return;
             }
 
-            /* 2. 在线 */
             dot.classList.add('dot-on');
             card.classList.remove('card-offline');
 
@@ -702,7 +666,6 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
             score.style.color = '';
             status.style.color = '#fff';
 
-            // 根据分数设置状态颜色
             if (r.score >= 90) {
                 score.className = 'score-val c-good';
                 status.style.backgroundColor = 'var(--good)';
@@ -721,21 +684,13 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
             }
         }
 
-        /* ---- 存储控制 ---- */
         function toggleRec() {
             if(isPending) return;
             isPending = true;
-
-            // 立即渲染中间状态
             updateRecBtn(!isRec, true);
-
-            // 发送指令
             client.publish(MQTT_CMD, JSON.stringify({ record: !isRec }));
-
-            // 超时复位 pending
             setTimeout(() => {
                 isPending = false;
-                // 如果服务器没有响应，本地切换
                 isRec = !isRec;
                 updateRecBtn(isRec, false);
                 initStorage();
@@ -748,20 +703,19 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
 
             if (pending) {
                 btn.className = "btn-info btn-rec pending";
-                txt.innerText = active ? "开启中..." : "关闭中...";
-                txt.style.color = "#eab308"; // 黄色
+                txt.innerText = active ? "..." : "...";
+                txt.style.color = "#eab308"; 
             } else if (active) {
                 btn.className = "btn-info btn-rec active";
-                txt.innerText = "机载存储: ON";
-                txt.style.color = "#ef4444"; // 红色
+                txt.innerText = "存储:ON";
+                txt.style.color = "#ef4444"; 
             } else {
                 btn.className = "btn-info btn-rec";
-                txt.innerText = "机载存储: OFF";
-                txt.style.color = "#94a3b8"; // 灰色
+                txt.innerText = "存储:OFF";
+                txt.style.color = "#94a3b8"; 
             }
         }
 
-        /* ---- 定时检查掉线 ---- */
         setInterval(() => {
             const now = Date.now();
             let anyOnline = false;
@@ -770,7 +724,6 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
                 const online = row && (now - row.ts < TIMEOUT_MS) && row.online;
                 anyOnline = anyOnline || online;
 
-                // 如果传感器离线，更新为离线状态
                 if (!online && sensorData[id].online) {
                     sensorData[id] = {
                         rms_acc: 0,
@@ -781,8 +734,6 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
                         status: '离线',
                         online: false
                     };
-
-                    // 更新UI
                     const card   = document.getElementById(`card-${id}`);
                     const dot    = document.getElementById(`dot-${id}`);
                     const score  = document.getElementById(`score-${id}`);
@@ -811,13 +762,9 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
             }
         }, 1000);
 
-        /* ---- 页面加载完成后的初始化 ---- */
         window.addEventListener('load', () => {
-            // 默认开启存储
             updateRecBtn(true, false);
             initStorage();
-
-            // 页面关闭前提示
             window.addEventListener('beforeunload', (e) => {
                 if (storedData.length > 0 && isRec) {
                     const message = '您有未保存的数据，确定要离开吗？';
