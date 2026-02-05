@@ -414,7 +414,7 @@ r['score'] = int(max(0, min(100, 100 - deduction)))</div>
                 <h3>8. 通信输出</h3>
                 <ul>
                     <li><span class="param">MQTT (2Hz)：</span> JSON格式特征数据，包含健康评分和状态</li>
-                    <li><span class="param">CAN FD (5Hz)：</span> 0x391 ID，12字节健康分数 (0-100)</li>
+                    <li><span class="param">CAN (5Hz)：</span> 0x391 0x392 ID，每帧6字节健康分数 (0-100)</li>
                     <li><span class="param">控制命令：</span> 通过MQTT TOPIC_CMD控制机载存储开关</li>
                 </ul>
             </div>
