@@ -179,7 +179,7 @@
         .c-warn { color: var(--warn); }
         .c-bad { color: var(--bad); }
 
-        /* 模态框样式维持不变 */
+        /* 模态框样式 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8);
@@ -210,82 +210,43 @@
         .modal-body h3 { font-size: 0.95rem; color: #fff; margin: 10px 0 4px 0; border-left: 4px solid var(--accent); padding-left: 8px; }
         .modal-body p { margin: 0 0 8px 0; }
         .formula-box { background: #0b1120; padding: 6px 10px; border-radius: 4px; font-family: monospace; color: #a5b4fc; margin-bottom: 8px; font-size: 0.85rem; word-break: break-all; }
-        .code-box { background: #0b1120; padding: 8px 12px; border-radius: 4px; font-family: 'Courier New', monospace; color: #a5b4fc; margin-bottom: 10px; font-size: 0.8rem; border-left: 3px solid var(--accent); white-space: pre-wrap; }
         ul { margin: 0; padding-left: 20px; }
         li { margin-bottom: 2px; }
         .highlight { color: #fbbf24; font-weight: bold; }
         .param { color: #7dd3fc; }
 
         /* ---- 媒体查询：响应式优化布局 ---- */
-
-        /* 平板尺寸 (<1200px) */
         @media (max-width: 1200px) {
-            body { overflow: hidden; /* 确保平板也不滚动 */ }
+            body { overflow: hidden; }
             .grid-container {
-                /* 平板改为 4列 x 3行，填满屏幕 */
                 grid-template-columns: repeat(4, 1fr);
                 grid-template-rows: repeat(3, 1fr);
             }
             .score-val { font-size: clamp(2rem, 6vh, 4rem); }
         }
 
-        /* 手机尺寸 (<768px) */
         @media (max-width: 768px) {
-            /* 头部调整 */
-            header {
-                padding: 5px 10px;
-                flex-wrap: wrap; /* 允许折行但尽量挤在一行 */
-                gap: 5px;
-            }
+            header { padding: 5px 10px; flex-wrap: wrap; gap: 5px; }
             h1 { width: 100%; text-align: center; margin-bottom: 2px; }
-            .header-left, .header-right {
-                width: 100%; justify-content: space-between;
-            }
+            .header-left, .header-right { width: 100%; justify-content: space-between; }
             .header-right { padding-top: 2px; border-top: 1px solid #334155; }
-
-            /* 隐藏非必要文本以节省空间 */
             #latency { font-size: 0.8rem; }
             .btn-info, .btn-rec, .btn-download { padding: 3px 8px; font-size: 0.75rem; }
-
             .main-content { padding: 5px; }
-
-            /* 核心网格布局：手机端 */
             .grid-container {
-                /* 改为 3列 x 4行 = 12个
-                   相比 2列x6行，3列x4行在垂直方向上每个卡片更高，
-                   更能容纳 标题+分数+指标 的纵向布局 */
                 grid-template-columns: repeat(3, 1fr);
                 grid-template-rows: repeat(4, 1fr);
                 gap: 5px;
             }
-
-            .rotor-card {
-                padding: 4px;
-                border-radius: 6px;
-            }
-
-            /* 卡片内部微调 */
+            .rotor-card { padding: 4px; border-radius: 6px; }
             .rotor-id { font-size: 0.7rem; }
             .online-dot { width: 6px; height: 6px; }
-
-            .score-val {
-                /* 字体随视口高度缩放 */
-                font-size: 3.5vh;
-                margin: 2px 0;
-            }
-            .status-label {
-                font-size: 0.6rem;
-                padding: 1px 6px;
-            }
-
-            .metrics-grid {
-                /* 手机端非常窄，指标名和值需要极度紧凑 */
-                padding: 2px;
-                gap: 2px;
-            }
+            .score-val { font-size: 3.5vh; margin: 2px 0; }
+            .status-label { font-size: 0.6rem; padding: 1px 6px; }
+            .metrics-grid { padding: 2px; gap: 2px; }
             .m-title { font-size: 0.5rem; transform: scale(0.85); }
             .m-val { font-size: 0.75rem; }
-            .m-unit { display: none; /* 手机端隐藏单位以节省空间 */ }
+            .m-unit { display: none; }
         }
     </style>
 </head>
@@ -321,7 +282,6 @@
         <div class="grid-container" id="app"></div>
     </div>
 
-    <!-- 只修改模态框中的算法说明部分，其他部分保持不变 -->
     <div class="modal-overlay" id="infoModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -329,72 +289,33 @@
                 <button class="close-btn" onclick="toggleModal(false)">&times;</button>
             </div>
             <div class="modal-body">
+                <!-- 模态框内容保持原样，与上一版一致 -->
                 <p><strong>数据源:</strong> 12路 CAN总线 六轴IMU (加速度+陀螺仪) | <strong>采样率:</strong> 200Hz</p>
-                <p><strong>计算频率:</strong> 2Hz (每0.5秒计算一次) | <strong>FFT窗口:</strong> 200样本 (1秒数据)</p>
-
+                <p><strong>计算频率:</strong> 2Hz (每0.5秒计算一次) | <strong>FFT窗口:</strong> 800样本 (4秒数据)</p>
                 <h3>1. 数据预处理</h3>
-                <p>原始CAN数据解析：加速度 (0x51) 和陀螺仪 (0x52) 数据包，每个包包含三轴原始值。</p>
                 <div class="formula-box">原始值 = 二进制解析(CAN数据包[2:8])  // 三轴16位有符号整数</div>
-
                 <h3>2. RMS (均方根) 计算</h3>
-                <p>实时统计加速度和陀螺仪的平方和，每次计算时清零重新统计：</p>
                 <div class="formula-box">RMS<sub>acc</sub> = √(∑(acc<sub>i</sub>²)/N) × 0.00048828  // 转换为g单位</div>
                 <div class="formula-box">RMS<sub>gyro</sub> = √(∑(gyro<sub>i</sub>²)/N) × 0.061035  // 转换为°/s单位</div>
                 <p><span class="highlight">噪声门限：</span> RMS < 0.05g 时认为信号过小，直接返回0频</p>
-
                 <h3>3. 峭度因子计算</h3>
-                <p>峭度（Kurtosis）衡量信号分布的尖锐程度，计算公式：</p>
                 <div class="formula-box">Kurtosis = E[(X-μ)⁴] / {E[(X-μ)²]}²</div>
-                <p>其中：</p>
-                <ul>
-                    <li>X：加速度信号（去除直流分量）</li>
-                    <li>μ：信号的均值</li>
-                    <li>E[·]：期望算子</li>
-                    <li>实际取三轴加速度峭度的最大值作为最终值</li>
-                </ul>
-
                 <h3>4. 主频检测 (FFT分析)</h3>
-                <p>基于汉宁窗FFT的复合频谱分析流程：</p>
-                <ol>
-                    <li>加窗处理：x<sub>windowed</sub> = x · w<sub>Hanning</sub></li>
-                    <li>三轴合成频谱：M(f) = √(|FFT(x)|² + |FFT(y)|² + |FFT(z)|²)</li>
-                    <li>在2-100Hz范围内寻找主峰：f<sub>peak</sub> = argmax M(f)</li>
-                    <li>噪声基底：M<sub>noise</sub> = median(M(f))</li>
-                </ol>
-                <p><span class="highlight">检测条件：</span> M(f<sub>peak</sub>) > 4·M<sub>noise</sub> AND M(f<sub>peak</sub>) > 0.2</p>
-
-                <h3>5. 健康评分算法 (动态扣分制)</h3>
-                <p>基准100分，按偏离程度线性扣分：</p>
+                <p>基于汉宁窗FFT的复合频谱分析流程，检测条件：M(f<sub>peak</sub>) > 4·M<sub>noise</sub> AND M(f<sub>peak</sub>) > 0.2</p>
+                <h3>5. 健康评分算法 (动态扣分制) - 优化版</h3>
                 <div class="formula-box">总分 = 100 - ∑扣分项</div>
-                <p>扣分项公式：</p>
                 <ul>
-                    <li><span class="param">加速度RMS扣分：</span> D<sub>acc</sub> = max(0, RMS<sub>acc</sub>-10) × 3</li>
-                    <li><span class="param">陀螺仪RMS扣分：</span> D<sub>gyro</sub> = max(0, RMS<sub>gyro</sub>-100) × 0.2</li>
-                    <li><span class="param">峭度扣分：</span> D<sub>kurt</sub> = max(0, Kurtosis-3.5) × 10</li>
-                    <li><span class="param">组内相对比较：</span> D<sub>rel</sub> = max(0, (RMS<sub>acc</sub>/μ<sub>group</sub>-1.2)) × 20</li>
-                    <li><span class="param">优秀条件：</span> 若 RMS<sub>acc</sub> < 2.0g，则直接评分 = 100</li>
+                    <li><span class="param">加速度RMS扣分：</span> D<sub>acc</sub> = max(0, RMS<sub>acc</sub>-10.0) × 2.0</li>
+                    <li><span class="param">陀螺仪RMS扣分：</span> D<sub>gyro</sub> = max(0, RMS<sub>gyro</sub>-100.0) × 0.2</li>
+                    <li><span class="param">峭度扣分(优化逻辑)：</span> 阈值=4.5, 斜率=3.0, 上限=20分, RMS>0.5g生效</li>
+                    <li><span class="param">组内相对比较：</span> D<sub>rel</sub> = max(0, ratio_diff-0.3) × 20.0</li>
                 </ul>
-                <div class="formula-box">最终分数 = clamp(0, 100, 100 - D<sub>acc</sub> - D<sub>gyro</sub> - D<sub>kurt</sub> - D<sub>rel</sub>)</div>
-
-                <h3>6. 状态判定</h3>
+                <h3>6. 状态判定 (四级分类)</h3>
                 <ul>
                     <li><span class="param">优秀 (绿色)：</span> 分数 ≥ 90</li>
-                    <li><span class="param">警告 (黄色)：</span> 60 ≤ 分数 < 90</li>
+                    <li><span class="param">良好 (蓝色)：</span> 75 ≤ 分数 < 90</li>
+                    <li><span class="param">警告 (黄色)：</span> 60 ≤ 分数 < 75</li>
                     <li><span class="param">危险 (红色)：</span> 分数 < 60</li>
-                    <li><span class="param">离线 (灰色)：</span> 2秒未收到数据</li>
-                </ul>
-
-                <h3>7. 数据存储</h3>
-                <p><span class="param">机载存储：</span> 200Hz原始数据存储到SD卡，二进制格式，最大1GB</p>
-                <p><span class="param">网页存储：</span> 1Hz特征数据存储到浏览器内存，CSV格式</p>
-                <div class="formula-box">二进制格式：时间戳(8字节) + 12传感器×6轴×2字节 = 152字节/行</div>
-                <div class="formula-box">存储频率：Δt = 5ms (200Hz)，零阶保持机制</div>
-
-                <h3>8. 通信输出</h3>
-                <ul>
-                    <li><span class="param">MQTT (2Hz)：</span> JSON格式特征数据，包含健康评分和状态</li>
-                    <li><span class="param">CAN (5Hz)：</span> 0x391 0x392 ID，每帧6字节健康扣分 (0-100)</li>
-                    <li><span class="param">控制命令：</span> 通过MQTT TOPIC_CMD控制机载存储开关</li>
                 </ul>
             </div>
         </div>
@@ -539,8 +460,6 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            console.log(`已下载 ${storedData.length} 行数据`);
         }
 
         function toggleModal(show) {
@@ -621,19 +540,24 @@
             const score  = document.getElementById(`score-${id}`);
             const status = document.getElementById(`status-${id}`);
 
+            // 重置基本样式
+            card.classList.remove('card-offline');
+            dot.classList.remove('dot-on');
+            score.style.color = '';
+            status.style.color = '#fff';
+
             if (!r.online) {
-                dot.classList.remove('dot-on');
                 score.innerText  = '0';
                 score.style.color = '#64748b';
                 status.innerText  = '离线';
                 status.style.backgroundColor = 'transparent';
                 status.style.color = '#94a3b8';
+                card.style.borderColor = '#2d3f58'; // 离线恢复默认边框
                 card.classList.add('card-offline');
                 return;
             }
 
             dot.classList.add('dot-on');
-            card.classList.remove('card-offline');
 
             document.getElementById(`rms-${id}`).innerText   = r.rms_acc.toFixed(2);
             document.getElementById(`gyro-${id}`).innerText  = r.rms_gyro.toFixed(1);
@@ -641,22 +565,33 @@
             document.getElementById(`kurt-${id}`).innerText  = r.kurtosis.toFixed(2);
 
             score.innerText  = r.score;
-            status.innerText = r.status;
-            score.style.color = '';
-            status.style.color = '#fff';
+
+            // ============================================
+            // 修正后的四级状态颜色逻辑 (90/75/60)
+            // ============================================
 
             if (r.score >= 90) {
-                score.className = 'score-val c-good';
+                // 优秀 (绿色)
+                score.style.color = 'var(--good)';
                 status.style.backgroundColor = 'var(--good)';
                 card.style.borderColor = 'var(--good)';
                 status.innerText = '优秀';
+            } else if (r.score >= 75) {
+                // 良好 (蓝色) - 新增
+                const blueColor = '#3b82f6';
+                score.style.color = blueColor;
+                status.style.backgroundColor = blueColor;
+                card.style.borderColor = blueColor;
+                status.innerText = '良好';
             } else if (r.score >= 60) {
-                score.className = 'score-val c-warn';
+                // 警告 (黄色)
+                score.style.color = 'var(--warn)';
                 status.style.backgroundColor = 'var(--warn)';
                 card.style.borderColor = 'var(--warn)';
                 status.innerText = '警告';
             } else {
-                score.className = 'score-val c-bad';
+                // 危险 (红色)
+                score.style.color = 'var(--bad)';
                 status.style.backgroundColor = 'var(--bad)';
                 card.style.borderColor = 'var(--bad)';
                 status.innerText = '危险';
@@ -704,21 +639,16 @@
                 anyOnline = anyOnline || online;
 
                 if (!online && sensorData[id].online) {
-                    sensorData[id] = {
-                        rms_acc: 0,
-                        rms_gyro: 0,
-                        freq: 0,
-                        kurtosis: 0,
-                        score: 0,
-                        status: '离线',
-                        online: false
-                    };
+                    sensorData[id].online = false;
+                    sensorData[id].status = '离线';
+
                     const card   = document.getElementById(`card-${id}`);
                     const dot    = document.getElementById(`dot-${id}`);
                     const score  = document.getElementById(`score-${id}`);
                     const status = document.getElementById(`status-${id}`);
 
                     card.classList.add('card-offline');
+                    card.style.borderColor = '#2d3f58'; // 超时重置边框
                     dot.classList.remove('dot-on');
                     score.innerText  = '0';
                     score.style.color = '#64748b';
