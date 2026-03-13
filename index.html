@@ -23,15 +23,14 @@
             color: var(--text-main);
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0; padding: 0;
-            height: 100vh; /* 强制占满视口 */
+            height: 100vh;
             width: 100vw;
             display: flex; flex-direction: column;
-            overflow: hidden; /* 禁止全局滚动 */
+            overflow: hidden;
         }
 
         header {
             background: var(--header-bg);
-            /* 弹性高度，但尽量紧凑 */
             flex: 0 0 auto;
             display: flex; align-items: center; justify-content: space-between;
             padding: 8px 15px;
@@ -85,9 +84,9 @@
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
         .main-content {
-            flex: 1; /* 占据剩余空间 */
+            flex: 1;
             padding: 10px;
-            overflow: hidden; /* 核心：禁止滚动，强迫内容适应 */
+            overflow: hidden;
             position: relative;
             display: flex;
             flex-direction: column;
@@ -95,12 +94,11 @@
 
         .grid-container {
             display: grid;
-            /* 默认桌面：6列 x 2行 */
             grid-template-columns: repeat(6, 1fr);
             grid-template-rows: repeat(2, 1fr);
             gap: 10px;
             width: 100%;
-            height: 100%; /* 填满父容器 */
+            height: 100%;
         }
 
         .rotor-card {
@@ -111,7 +109,7 @@
             display: flex; flex-direction: column; justify-content: space-between;
             position: relative; transition: all 0.3s;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            min-height: 0; /* 允许 flex/grid 项目压缩到内容以下 */
+            min-height: 0;
             min-width: 0;
         }
 
@@ -125,7 +123,7 @@
         }
         .rotor-id {
             font-weight: 700; color: var(--text-muted);
-            font-size: clamp(0.7rem, 1vw, 1.2rem); /* 动态字体 */
+            font-size: clamp(0.7rem, 1vw, 1.2rem);
             white-space: nowrap;
         }
 
@@ -135,10 +133,9 @@
         .score-section {
             text-align: center; flex: 1;
             display: flex; flex-direction: column; justify-content: center;
-            min-height: 0; /* 允许压缩 */
+            min-height: 0;
         }
         .score-val {
-            /* 关键：使用 vh/vmin 动态调整大字号，确保不溢出 */
             font-size: clamp(2rem, 8vmin, 5rem);
             font-weight: 800; line-height: 1;
             font-family: 'Segoe UI', sans-serif;
@@ -157,7 +154,7 @@
             gap: 4px;
             background: rgba(0,0,0,0.25);
             padding: 4px; border-radius: 6px;
-            margin-top: auto; /* 推到底部 */
+            margin-top: auto;
         }
 
         .metric-box { display: flex; flex-direction: column; align-items: center; overflow: hidden; }
@@ -165,7 +162,7 @@
             font-size: 0.65rem;
             color: var(--text-muted); text-transform: uppercase;
             white-space: nowrap;
-            transform: scale(0.9); /* 稍微缩小标题 */
+            transform: scale(0.9);
         }
         .m-val {
             font-family: 'Courier New', monospace;
@@ -215,7 +212,6 @@
         .highlight { color: #fbbf24; font-weight: bold; }
         .param { color: #7dd3fc; }
 
-        /* ---- 媒体查询：响应式优化布局 ---- */
         @media (max-width: 1200px) {
             body { overflow: hidden; }
             .grid-container {
@@ -262,11 +258,11 @@
         </div>
 
         <div class="header-right">
-            <button id="btn-download" class="btn-info btn-download" onclick="downloadData()" title="下载存储数据">
-                ⬇️ 下载
+            <button id="btn-download" class="btn-info btn-download" onclick="downloadData()" title="下载网页缓存的遥测数据">
+                ⬇️ 下载遥测CSV
             </button>
-            <button id="btn-rec" class="btn-info btn-rec" onclick="toggleRec()">
-                <div class="dot"></div> <span id="rec-txt">存储:ON</span>
+            <button id="btn-rec" class="btn-info btn-rec" onclick="toggleRec()" title="控制机载计算机保存200Hz原始数据(BIN)">
+                <div class="dot"></div> <span id="rec-txt">底层BIN存储:未知</span>
             </button>
             <div class="status-item">
                 <span><span id="last-time" style="color:#fff; font-family:monospace;">--:--</span></span>
@@ -289,33 +285,50 @@
                 <button class="close-btn" onclick="toggleModal(false)">&times;</button>
             </div>
             <div class="modal-body">
-                <!-- 模态框内容保持原样，与上一版一致 -->
                 <p><strong>数据源:</strong> 12路 CAN总线 六轴IMU (加速度+陀螺仪) | <strong>采样率:</strong> 200Hz</p>
                 <p><strong>计算频率:</strong> 2Hz (每0.5秒计算一次) | <strong>FFT窗口:</strong> 800样本 (4秒数据)</p>
                 <h3>1. 数据预处理</h3>
                 <div class="formula-box">原始值 = 二进制解析(CAN数据包[2:8])  // 三轴16位有符号整数</div>
-                <h3>2. RMS (均方根) 计算</h3>
-                <div class="formula-box">RMS<sub>acc</sub> = √(∑(acc<sub>i</sub>²)/N) × 0.00048828  // 转换为g单位</div>
-                <div class="formula-box">RMS<sub>gyro</sub> = √(∑(gyro<sub>i</sub>²)/N) × 0.061035  // 转换为°/s单位</div>
-                <p><span class="highlight">噪声门限：</span> RMS < 0.05g 时认为信号过小，直接返回0频</p>
-                <h3>3. 峭度因子计算</h3>
-                <div class="formula-box">Kurtosis = E[(X-μ)⁴] / {E[(X-μ)²]}²</div>
-                <h3>4. 主频检测 (FFT分析)</h3>
-                <p>基于汉宁窗FFT的复合频谱分析流程，检测条件：M(f<sub>peak</sub>) > 4·M<sub>noise</sub> AND M(f<sub>peak</sub>) > 0.2</p>
-                <h3>5. 健康评分算法 (动态扣分制) - 优化版</h3>
-                <div class="formula-box">总分 = 100 - ∑扣分项</div>
+
+                <h3>2. 基础特征计算 (每 0.5 秒提取)</h3>
+                <div class="formula-box">加速度 RMS = √(∑(acc²)/N) × 0.00048828 (g)</div>
+                <div class="formula-box">角速度 RMS = √(∑(gyro²)/N) × 0.061035 (°/s)</div>
+                <div class="formula-box">峭度 (Kurtosis) = E[(X-μ)⁴] / {E[(X-μ)²]}²</div>
+                <p><span class="highlight">静止/降噪门限：</span> 当 加速度RMS < 0.05g 时，判定为电机未启动或处于纯噪声状态，跳过高频计算，主频直接置 0。</p>
+
+                <h3>3. 频域特征检测 (降频优化，每 2 秒计算 1 次)</h3>
+                <p>基于 Hanning 窗的复合频谱分析。在 2~100Hz 范围内寻找峰值频率 f<sub>peak</sub>。<br>
+                <span class="highlight">有效主频条件：</span> 峰值能量 > 4倍底噪均值 <strong>且</strong> 绝对幅值 > 0.2</p>
+
+                <h3>4. 健康评分算法 (满分100，动态扣分制)</h3>
+                <p><span class="highlight">低振动豁免：</span> 若 <strong>加速度 RMS < 2.0g</strong>，判定机器运行极其平稳，直接赋予 <strong>100分 (优秀)</strong>，不执行后续扣分计算。</p>
                 <ul>
-                    <li><span class="param">加速度RMS扣分：</span> D<sub>acc</sub> = max(0, RMS<sub>acc</sub>-10.0) × 2.0</li>
-                    <li><span class="param">陀螺仪RMS扣分：</span> D<sub>gyro</sub> = max(0, RMS<sub>gyro</sub>-100.0) × 0.2</li>
-                    <li><span class="param">峭度扣分(优化逻辑)：</span> 阈值=4.5, 斜率=3.0, 上限=20分, RMS>0.5g生效</li>
-                    <li><span class="param">组内相对比较：</span> D<sub>rel</sub> = max(0, ratio_diff-0.3) × 20.0</li>
+                    <li><span class="param">① 加速度超限扣分 (反映整体绝对震动)：</span><br>
+                        当 Acc_RMS > 10.0g 时触发。超出部分每 1.0g 扣 2 分。<br>
+                        <code>D_acc = (RMS_acc - 10.0) × 2.0</code>
+                    </li>
+                    <li style="margin-top: 6px;"><span class="param">② 陀螺仪超限扣分 (反映机臂或机架的异常扭转)：</span><br>
+                        当 Gyro_RMS > 100.0°/s 时触发。超出部分每 1.0°/s 扣 0.2 分。<br>
+                        <code>D_gyro = (RMS_gyro - 100.0) × 0.2</code>
+                    </li>
+                    <li style="margin-top: 6px;"><span class="param">③ 冲击异常扣分 (峭度识别，反映轴承磨损、缺珠或机械撞击)：</span><br>
+                        非静止状态(RMS>0.5g)下，若 峭度 > 4.5 触发。超出部分每大 1.0 扣 1 分，此项最多扣 20 分。<br>
+                        <code>D_kurt = MIN( 20.0, (Kurtosis - 4.5) × 1.0 )</code>
+                    </li>
+                    <li style="margin-top: 6px;"><span class="param">④ 组内离群扣分 (反映同构件相对恶化)：</span><br>
+                        将12个旋翼按机臂分为4组(每组3个)。计算同组正常电机的 RMS 中位数。<br>若某电机震动高出本组中位数 30% 以上，触发离群扣分。<br>
+                        <code>差异比 R = (RMS_acc - 组内中位数) / 组内中位数</code><br>
+                        <code>D_rel = (R - 0.3) × 20.0</code>
+                    </li>
                 </ul>
-                <h3>6. 状态判定 (四级分类)</h3>
-                <ul>
-                    <li><span class="param">优秀 (绿色)：</span> 分数 ≥ 90</li>
-                    <li><span class="param">良好 (蓝色)：</span> 75 ≤ 分数 < 90</li>
-                    <li><span class="param">警告 (黄色)：</span> 60 ≤ 分数 < 75</li>
-                    <li><span class="param">危险 (红色)：</span> 分数 < 60</li>
+                <div class="formula-box" style="margin-top: 8px;">最终得分 = MAX( 0, 100 - D_acc - D_gyro - D_kurt - D_rel )</div>
+
+                <h3>5. 状态分级 (基于最终得分)</h3>
+                <ul style="margin-bottom: 10px;">
+                    <li><span class="param" style="color: var(--good)">优秀：</span> 分数 ≥ 90 (状态完美，可正常执行任务)</li>
+                    <li><span class="param" style="color: #3b82f6">良好：</span> 75 ≤ 分数 < 90 (存在轻微振动，属于正常波动范围)</li>
+                    <li><span class="param" style="color: var(--warn)">警告：</span> 60 ≤ 分数 < 75 (振动超标或存在异常冲击，建议落地检查桨叶/轴承)</li>
+                    <li><span class="param" style="color: var(--bad)">危险：</span> 分数 < 60 (存在严重机械故障风险，建议立即降落维护)</li>
                 </ul>
             </div>
         </div>
@@ -333,9 +346,8 @@
         const storedData  = [];
 
         let client = null;
-        let isRec = true;
+        let isRec = false; // 此变量现在仅代表底层板子是否在存 BIN
         let isPending = false;
-        let storageTimer = null;
         let startTime = Date.now();
 
         const statusMap = {
@@ -388,15 +400,8 @@
             };
         }
 
-        function initStorage() {
-            if (storageTimer) {
-                clearInterval(storageTimer);
-            }
-            if (isRec) {
-                storageTimer = setInterval(storeCurrentData, STORAGE_INTERVAL);
-                console.log('数据存储已启动 (1Hz)');
-            }
-        }
+        // 核心解耦：独立运行，不论在不在线，不论底层是否开启BIN记录，网页永远每秒存一条 CSV 行
+        setInterval(storeCurrentData, STORAGE_INTERVAL);
 
         function storeCurrentData() {
             const timestamp = Date.now() - startTime;
@@ -405,11 +410,18 @@
             for (let i = 1; i <= 12; i++) {
                 const data = sensorData[i];
                 const statusForStorage = statusMap[data.status] || data.status;
+
+                // 确保数字调用 toFixed 防止异常
+                const rms_acc = typeof data.rms_acc === 'number' ? data.rms_acc : 0;
+                const rms_gyro = typeof data.rms_gyro === 'number' ? data.rms_gyro : 0;
+                const freq = typeof data.freq === 'number' ? data.freq : 0;
+                const kurtosis = typeof data.kurtosis === 'number' ? data.kurtosis : 0;
+
                 row.push(
-                    data.rms_acc.toFixed(2),
-                    data.rms_gyro.toFixed(1),
-                    data.freq.toFixed(1),
-                    data.kurtosis.toFixed(2),
+                    rms_acc.toFixed(2),
+                    rms_gyro.toFixed(1),
+                    freq.toFixed(1),
+                    kurtosis.toFixed(2),
                     data.score,
                     statusForStorage
                 );
@@ -454,7 +466,7 @@
             const url = URL.createObjectURL(blob);
 
             link.setAttribute('href', url);
-            link.setAttribute('download', `drone_data_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`);
+            link.setAttribute('download', `drone_telemetry_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`);
             link.style.visibility = 'hidden';
 
             document.body.appendChild(link);
@@ -479,17 +491,14 @@
             document.getElementById('conn-text').innerText = '在线';
             document.getElementById('conn-text').style.color = '#22c55e';
             client.subscribe(MQTT_TOPIC);
-            initStorage();
         });
+
         client.on('offline', () => {
             document.getElementById('conn-dot').classList.remove('status-active');
             document.getElementById('conn-text').innerText = '离线';
             document.getElementById('conn-text').style.color = '#ef4444';
-            if (storageTimer) {
-                clearInterval(storageTimer);
-                storageTimer = null;
-            }
         });
+
         client.on('message', (topic, payload) => {
             try {
                 const msg = JSON.parse(payload.toString());
@@ -497,10 +506,10 @@
                 document.getElementById('latency').innerText = Math.max(0, Date.now() - serverTs);
                 document.getElementById('last-time').innerText = new Date().toLocaleTimeString();
 
+                // 仅同步按钮状态，不再干扰定时存储
                 if(msg.rec !== undefined && !isPending && msg.rec !== isRec) {
                     isRec = msg.rec;
                     updateRecBtn(isRec, false);
-                    initStorage();
                 }
 
                 if (!msg.data) return;
@@ -540,7 +549,6 @@
             const score  = document.getElementById(`score-${id}`);
             const status = document.getElementById(`status-${id}`);
 
-            // 重置基本样式
             card.classList.remove('card-offline');
             dot.classList.remove('dot-on');
             score.style.color = '';
@@ -552,7 +560,7 @@
                 status.innerText  = '离线';
                 status.style.backgroundColor = 'transparent';
                 status.style.color = '#94a3b8';
-                card.style.borderColor = '#2d3f58'; // 离线恢复默认边框
+                card.style.borderColor = '#2d3f58';
                 card.classList.add('card-offline');
                 return;
             }
@@ -566,31 +574,23 @@
 
             score.innerText  = r.score;
 
-            // ============================================
-            // 修正后的四级状态颜色逻辑 (90/75/60)
-            // ============================================
-
             if (r.score >= 90) {
-                // 优秀 (绿色)
                 score.style.color = 'var(--good)';
                 status.style.backgroundColor = 'var(--good)';
                 card.style.borderColor = 'var(--good)';
                 status.innerText = '优秀';
             } else if (r.score >= 75) {
-                // 良好 (蓝色) - 新增
                 const blueColor = '#3b82f6';
                 score.style.color = blueColor;
                 status.style.backgroundColor = blueColor;
                 card.style.borderColor = blueColor;
                 status.innerText = '良好';
             } else if (r.score >= 60) {
-                // 警告 (黄色)
                 score.style.color = 'var(--warn)';
                 status.style.backgroundColor = 'var(--warn)';
                 card.style.borderColor = 'var(--warn)';
                 status.innerText = '警告';
             } else {
-                // 危险 (红色)
                 score.style.color = 'var(--bad)';
                 status.style.backgroundColor = 'var(--bad)';
                 card.style.borderColor = 'var(--bad)';
@@ -607,7 +607,6 @@
                 isPending = false;
                 isRec = !isRec;
                 updateRecBtn(isRec, false);
-                initStorage();
             }, 2000);
         }
 
@@ -617,15 +616,15 @@
 
             if (pending) {
                 btn.className = "btn-info btn-rec pending";
-                txt.innerText = active ? "..." : "...";
+                txt.innerText = active ? "同步中..." : "同步中...";
                 txt.style.color = "#eab308";
             } else if (active) {
                 btn.className = "btn-info btn-rec active";
-                txt.innerText = "存储:ON";
+                txt.innerText = "底层记录:ON";
                 txt.style.color = "#ef4444";
             } else {
                 btn.className = "btn-info btn-rec";
-                txt.innerText = "存储:OFF";
+                txt.innerText = "底层记录:OFF";
                 txt.style.color = "#94a3b8";
             }
         }
@@ -648,7 +647,7 @@
                     const status = document.getElementById(`status-${id}`);
 
                     card.classList.add('card-offline');
-                    card.style.borderColor = '#2d3f58'; // 超时重置边框
+                    card.style.borderColor = '#2d3f58';
                     dot.classList.remove('dot-on');
                     score.innerText  = '0';
                     score.style.color = '#64748b';
@@ -672,10 +671,8 @@
         }, 1000);
 
         window.addEventListener('load', () => {
-            updateRecBtn(true, false);
-            initStorage();
             window.addEventListener('beforeunload', (e) => {
-                if (storedData.length > 0 && isRec) {
+                if (storedData.length > 0) {
                     const message = '您有未保存的数据，确定要离开吗？';
                     e.preventDefault();
                     e.returnValue = message;
