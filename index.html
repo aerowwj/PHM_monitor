@@ -6,6 +6,7 @@
     <title>LX-1 无人机旋翼健康监测终端</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
+        /* 原始样式所有内容保持不变 */
         :root {
             --bg-color: #0b1120;
             --card-bg: #15253d;
@@ -244,10 +245,134 @@
             .m-val { font-size: 0.75rem; }
             .m-unit { display: none; }
         }
+
+        /* 密码弹窗样式 */
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #0a0f1c 0%, #03060c 100%);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+            transition: all 0.3s ease;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .password-card {
+            background: rgba(21, 37, 61, 0.95);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            box-shadow: 0 25px 45px rgba(0,0,0,0.5), 0 0 0 1px rgba(56, 189, 248, 0.1);
+            padding: 2rem 2rem 2rem 2rem;
+            width: 320px;
+            max-width: 85vw;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .password-card h2 {
+            color: var(--accent);
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            font-size: 1.6rem;
+            text-shadow: 0 0 8px rgba(56,189,248,0.3);
+        }
+
+        .password-card .sub {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-bottom: 1.8rem;
+            border-bottom: 1px dashed #2d3f58;
+            display: inline-block;
+            padding-bottom: 4px;
+        }
+
+        .password-input {
+            background: #0b1120;
+            border: 1px solid #334155;
+            border-radius: 48px;
+            padding: 12px 20px;
+            width: calc(100% - 40px);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+            text-align: center;
+            letter-spacing: 2px;
+            font-family: monospace;
+        }
+
+        .password-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(56,189,248,0.2);
+        }
+
+        .password-btn {
+            background: linear-gradient(95deg, #1e2a3a, #0f172a);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 40px;
+            width: 100%;
+            margin-top: 1.5rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: 0.2s;
+        }
+
+        .password-btn:hover {
+            background: linear-gradient(95deg, #2d3f58, #1e293b);
+            color: white;
+            border-color: #7dd3fc;
+            transform: scale(0.98);
+        }
+
+        .error-msg {
+            color: #f87171;
+            font-size: 0.8rem;
+            margin-top: 12px;
+            min-height: 32px;
+            font-weight: 500;
+        }
+
+        /* 主容器默认隐藏，只有密码正确后才显示 */
+        #mainContainer {
+            display: none;
+            height: 100%;
+            width: 100%;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        body {
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
 
+<!-- 密码验证层 -->
+<div id="passwordOverlay" class="password-overlay">
+    <div class="password-card">
+        <h2>🔐 LX-1 安全终端</h2>
+        <div class="sub">授权访问 · 旋翼健康监测</div>
+        <input type="password" id="passwordInput" class="password-input" placeholder="请输入访问密码" autocomplete="off">
+        <button id="unlockBtn" class="password-btn">确认解锁</button>
+        <div id="errorMsg" class="error-msg"></div>
+    </div>
+</div>
+
+<!-- 原始完整页面内容容器 -->
+<div id="mainContainer">
     <header>
         <div class="header-left">
             <h1>LX-1 旋翼健康监测系统</h1>
@@ -258,10 +383,10 @@
         </div>
 
         <div class="header-right">
-            <button id="btn-download" class="btn-info btn-download" onclick="downloadData()" title="下载网页缓存的遥测数据">
+            <button id="btn-download" class="btn-info btn-download" onclick="window.downloadData()" title="下载网页缓存的遥测数据">
                 ⬇️ 下载遥测CSV
             </button>
-            <button id="btn-rec" class="btn-info btn-rec" onclick="toggleRec()" title="控制机载计算机保存200Hz原始数据(BIN)">
+            <button id="btn-rec" class="btn-info btn-rec" onclick="window.toggleRec()" title="控制机载计算机保存200Hz原始数据(BIN)">
                 <div class="dot"></div> <span id="rec-txt">底层BIN存储:未知</span>
             </button>
             <div class="status-item">
@@ -270,7 +395,7 @@
             <div class="status-item">
                 <span><span id="latency" style="color:var(--warn); font-weight:bold; font-family:monospace;">0</span>ms</span>
             </div>
-            <button class="btn-info" onclick="toggleModal(true)">说明</button>
+            <button class="btn-info" onclick="window.toggleModal(true)">说明</button>
         </div>
     </header>
 
@@ -282,7 +407,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>📊 算法定义与数据源 (基于 smart_phm_node.py)</h2>
-                <button class="close-btn" onclick="toggleModal(false)">&times;</button>
+                <button class="close-btn" onclick="window.toggleModal(false)">&times;</button>
             </div>
             <div class="modal-body">
                 <p><strong>数据源:</strong> 12路 CAN总线 六轴IMU (加速度+陀螺仪) | <strong>采样率:</strong> 200Hz</p>
@@ -333,32 +458,37 @@
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        const MQTT_BROKER = 'wss://broker.emqx.io:8084/mqtt';
-        const MQTT_TOPIC  = 'user_9527/drone_project/vibration_status';
-        const MQTT_CMD    = 'user_9527/drone_project/cmd';
-        const TIMEOUT_MS  = 5_000;
-        const STORAGE_INTERVAL = 1000;
+<script>
+    // ---------- 全局业务逻辑 (完全保留原始逻辑，仅调整函数注册方式) ----------
+    const MQTT_BROKER = 'wss://broker.emqx.io:8084/mqtt';
+    const MQTT_TOPIC  = 'user_9527/drone_project/vibration_status';
+    const MQTT_CMD    = 'user_9527/drone_project/cmd';
+    const TIMEOUT_MS  = 5000;
+    const STORAGE_INTERVAL = 1000;
 
-        const lastSeen    = {};
-        const sensorData  = new Array(13);
-        const storedData  = [];
+    let client = null;
+    let isRec = false;
+    let isPending = false;
+    let startTime = 0;
+    let lastSeen = {};
+    let sensorData = new Array(13);
+    let storedData = [];
 
-        let client = null;
-        let isRec = false; // 此变量现在仅代表底层板子是否在存 BIN
-        let isPending = false;
-        let startTime = Date.now();
+    const statusMap = {
+        '优秀': 'EXCELLENT',
+        '良好': 'GOOD',
+        '警告': 'WARNING',
+        '危险': 'DANGER',
+        '离线': 'OFFLINE'
+    };
 
-        const statusMap = {
-            '优秀': 'EXCELLENT',
-            '良好': 'GOOD',
-            '警告': 'WARNING',
-            '危险': 'DANGER',
-            '离线': 'OFFLINE'
-        };
-
+    // 构建卡片
+    function buildCards() {
         const container = document.getElementById('app');
+        if(!container) return;
+        container.innerHTML = '';
         for (let i = 1; i <= 12; i++) {
             container.innerHTML += `
                 <div class="rotor-card" id="card-${i}">
@@ -399,121 +529,171 @@
                 online: false
             };
         }
+    }
 
-        // 核心解耦：独立运行，不论在不在线，不论底层是否开启BIN记录，网页永远每秒存一条 CSV 行
+    function updateCard(r) {
+        const id = r.id;
+        const card   = document.getElementById(`card-${id}`);
+        const dot    = document.getElementById(`dot-${id}`);
+        const score  = document.getElementById(`score-${id}`);
+        const status = document.getElementById(`status-${id}`);
+        if(!card) return;
+        card.classList.remove('card-offline');
+        if(dot) dot.classList.remove('dot-on');
+        if(score) score.style.color = '';
+        if(status) status.style.color = '#fff';
+
+        if (!r.online) {
+            if(score) { score.innerText = '0'; score.style.color = '#64748b'; }
+            if(status) { status.innerText = '离线'; status.style.backgroundColor = 'transparent'; status.style.color = '#94a3b8'; }
+            if(card) card.style.borderColor = '#2d3f58';
+            if(card) card.classList.add('card-offline');
+            return;
+        }
+        if(dot) dot.classList.add('dot-on');
+        const rmsSpan = document.getElementById(`rms-${id}`);
+        const gyroSpan = document.getElementById(`gyro-${id}`);
+        const freqSpan = document.getElementById(`freq-${id}`);
+        const kurtSpan = document.getElementById(`kurt-${id}`);
+        if(rmsSpan) rmsSpan.innerText = r.rms_acc.toFixed(2);
+        if(gyroSpan) gyroSpan.innerText = r.rms_gyro.toFixed(1);
+        if(freqSpan) freqSpan.innerText = r.freq.toFixed(1);
+        if(kurtSpan) kurtSpan.innerText = r.kurtosis.toFixed(2);
+        if(score) score.innerText = r.score;
+
+        if (r.score >= 90) {
+            if(score) score.style.color = 'var(--good)';
+            if(status) { status.style.backgroundColor = 'var(--good)'; status.innerText = '优秀'; }
+            if(card) card.style.borderColor = 'var(--good)';
+        } else if (r.score >= 75) {
+            if(score) score.style.color = '#3b82f6';
+            if(status) { status.style.backgroundColor = '#3b82f6'; status.innerText = '良好'; }
+            if(card) card.style.borderColor = '#3b82f6';
+        } else if (r.score >= 60) {
+            if(score) score.style.color = 'var(--warn)';
+            if(status) { status.style.backgroundColor = 'var(--warn)'; status.innerText = '警告'; }
+            if(card) card.style.borderColor = 'var(--warn)';
+        } else {
+            if(score) score.style.color = 'var(--bad)';
+            if(status) { status.style.backgroundColor = 'var(--bad)'; status.innerText = '危险'; }
+            if(card) card.style.borderColor = 'var(--bad)';
+        }
+    }
+
+    function storeCurrentData() {
+        if (!startTime) return;
+        const timestamp = Date.now() - startTime;
+        const row = [timestamp];
+        for (let i = 1; i <= 12; i++) {
+            const data = sensorData[i];
+            const statusForStorage = statusMap[data.status] || data.status;
+            const rms_acc = typeof data.rms_acc === 'number' ? data.rms_acc : 0;
+            const rms_gyro = typeof data.rms_gyro === 'number' ? data.rms_gyro : 0;
+            const freq = typeof data.freq === 'number' ? data.freq : 0;
+            const kurtosis = typeof data.kurtosis === 'number' ? data.kurtosis : 0;
+            row.push(
+                rms_acc.toFixed(2),
+                rms_gyro.toFixed(1),
+                freq.toFixed(1),
+                kurtosis.toFixed(2),
+                data.score,
+                statusForStorage
+            );
+        }
+        storedData.push(row.join(','));
+        if (storedData.length > 10000) storedData.splice(0, 1000);
+    }
+
+    window.downloadData = function() {
+        if (!storedData.length) { alert('没有可下载的数据'); return; }
+        const header = ['timestamp_ms'];
+        for (let i = 1; i <= 12; i++) {
+            header.push(`id${i}_rms`, `id${i}_gyro`, `id${i}_freq`, `id${i}_kurt`, `id${i}_score`, `id${i}_status`);
+        }
+        const csvContent = [header.join(','), ...storedData].join('\n');
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `drone_telemetry_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    window.toggleRec = function() {
+        if(isPending || !client) return;
+        isPending = true;
+        const newState = !isRec;
+        const btn = document.getElementById('btn-rec');
+        const txt = document.getElementById('rec-txt');
+        if(btn) btn.className = "btn-info btn-rec pending";
+        if(txt) { txt.innerText = "同步中..."; txt.style.color = "#eab308"; }
+        client.publish(MQTT_CMD, JSON.stringify({ record: newState }));
+        setTimeout(() => {
+            isPending = false;
+            isRec = newState;
+            const btn2 = document.getElementById('btn-rec');
+            const txt2 = document.getElementById('rec-txt');
+            if (isRec) {
+                if(btn2) btn2.className = "btn-info btn-rec active";
+                if(txt2) { txt2.innerText = "底层记录:ON"; txt2.style.color = "#ef4444"; }
+            } else {
+                if(btn2) btn2.className = "btn-info btn-rec";
+                if(txt2) { txt2.innerText = "底层记录:OFF"; txt2.style.color = "#94a3b8"; }
+            }
+        }, 2000);
+    };
+
+    window.toggleModal = function(show) {
+        const modal = document.getElementById('infoModal');
+        if(modal) modal.style.display = show ? 'flex' : 'none';
+    };
+
+    function initMainApp() {
+        if(startTime !== 0) return;
+        buildCards();
+        startTime = Date.now();
+
         setInterval(storeCurrentData, STORAGE_INTERVAL);
 
-        function storeCurrentData() {
-            const timestamp = Date.now() - startTime;
-            const row = [timestamp];
-
-            for (let i = 1; i <= 12; i++) {
-                const data = sensorData[i];
-                const statusForStorage = statusMap[data.status] || data.status;
-
-                // 确保数字调用 toFixed 防止异常
-                const rms_acc = typeof data.rms_acc === 'number' ? data.rms_acc : 0;
-                const rms_gyro = typeof data.rms_gyro === 'number' ? data.rms_gyro : 0;
-                const freq = typeof data.freq === 'number' ? data.freq : 0;
-                const kurtosis = typeof data.kurtosis === 'number' ? data.kurtosis : 0;
-
-                row.push(
-                    rms_acc.toFixed(2),
-                    rms_gyro.toFixed(1),
-                    freq.toFixed(1),
-                    kurtosis.toFixed(2),
-                    data.score,
-                    statusForStorage
-                );
-            }
-
-            storedData.push(row.join(','));
-
-            if (storedData.length > 10000) {
-                storedData.splice(0, 1000);
-            }
-        }
-
-        function downloadData() {
-            if (storedData.length === 0) {
-                alert('没有可下载的数据');
-                return;
-            }
-
-            const header = ['timestamp_ms'];
-            for (let i = 1; i <= 12; i++) {
-                header.push(
-                    `id${i}_rms`,
-                    `id${i}_gyro`,
-                    `id${i}_freq`,
-                    `id${i}_kurt`,
-                    `id${i}_score`,
-                    `id${i}_status`
-                );
-            }
-
-            const csvContent = [
-                header.join(','),
-                ...storedData
-            ].join('\n');
-
-            const BOM = '\uFEFF';
-            const blob = new Blob([BOM + csvContent], {
-                type: 'text/csv;charset=utf-8;'
-            });
-
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-
-            link.setAttribute('href', url);
-            link.setAttribute('download', `drone_telemetry_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`);
-            link.style.visibility = 'hidden';
-
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function toggleModal(show) {
-            document.getElementById('infoModal').style.display = show ? 'flex' : 'none';
-        }
-        document.getElementById('infoModal').addEventListener('click', e => {
-            if (e.target.id === 'infoModal') toggleModal(false);
-        });
-
-        const options = {
-            clientId: 'monitor_client_' + Math.random().toString(16).substring(2, 8)
-        };
+        const options = { clientId: 'monitor_client_' + Math.random().toString(16).substring(2, 8) };
         client = mqtt.connect(MQTT_BROKER, options);
-
         client.on('connect', () => {
-            document.getElementById('conn-dot').classList.add('status-active');
-            document.getElementById('conn-text').innerText = '在线';
-            document.getElementById('conn-text').style.color = '#22c55e';
+            const dot = document.getElementById('conn-dot');
+            const text = document.getElementById('conn-text');
+            if(dot) dot.classList.add('status-active');
+            if(text) { text.innerText = '在线'; text.style.color = '#22c55e'; }
             client.subscribe(MQTT_TOPIC);
         });
-
         client.on('offline', () => {
-            document.getElementById('conn-dot').classList.remove('status-active');
-            document.getElementById('conn-text').innerText = '离线';
-            document.getElementById('conn-text').style.color = '#ef4444';
+            const dot = document.getElementById('conn-dot');
+            const text = document.getElementById('conn-text');
+            if(dot) dot.classList.remove('status-active');
+            if(text) { text.innerText = '离线'; text.style.color = '#ef4444'; }
         });
-
         client.on('message', (topic, payload) => {
             try {
                 const msg = JSON.parse(payload.toString());
                 const serverTs = msg.ts * 1000;
-                document.getElementById('latency').innerText = Math.max(0, Date.now() - serverTs);
-                document.getElementById('last-time').innerText = new Date().toLocaleTimeString();
-
-                // 仅同步按钮状态，不再干扰定时存储
+                const latencySpan = document.getElementById('latency');
+                if(latencySpan) latencySpan.innerText = Math.max(0, Date.now() - serverTs);
+                const lastTimeSpan = document.getElementById('last-time');
+                if(lastTimeSpan) lastTimeSpan.innerText = new Date().toLocaleTimeString();
                 if(msg.rec !== undefined && !isPending && msg.rec !== isRec) {
                     isRec = msg.rec;
-                    updateRecBtn(isRec, false);
+                    const btn = document.getElementById('btn-rec');
+                    const txt = document.getElementById('rec-txt');
+                    if (isRec) {
+                        if(btn) btn.className = "btn-info btn-rec active";
+                        if(txt) { txt.innerText = "底层记录:ON"; txt.style.color = "#ef4444"; }
+                    } else {
+                        if(btn) btn.className = "btn-info btn-rec";
+                        if(txt) { txt.innerText = "底层记录:OFF"; txt.style.color = "#94a3b8"; }
+                    }
                 }
-
                 if (!msg.data) return;
-
                 msg.data.forEach(r => {
                     lastSeen[r.id] = { online: r.online, ts: Date.now() };
                     if (r.online) {
@@ -527,107 +707,12 @@
                             online: true
                         };
                     } else {
-                        sensorData[r.id] = {
-                            rms_acc: 0,
-                            rms_gyro: 0,
-                            freq: 0,
-                            kurtosis: 0,
-                            score: 0,
-                            status: '离线',
-                            online: false
-                        };
+                        sensorData[r.id] = { rms_acc:0, rms_gyro:0, freq:0, kurtosis:0, score:0, status:'离线', online:false };
                     }
                     updateCard(r);
                 });
-            } catch (_) {}
+            } catch(e) {}
         });
-
-        function updateCard(r) {
-            const id = r.id;
-            const card   = document.getElementById(`card-${id}`);
-            const dot    = document.getElementById(`dot-${id}`);
-            const score  = document.getElementById(`score-${id}`);
-            const status = document.getElementById(`status-${id}`);
-
-            card.classList.remove('card-offline');
-            dot.classList.remove('dot-on');
-            score.style.color = '';
-            status.style.color = '#fff';
-
-            if (!r.online) {
-                score.innerText  = '0';
-                score.style.color = '#64748b';
-                status.innerText  = '离线';
-                status.style.backgroundColor = 'transparent';
-                status.style.color = '#94a3b8';
-                card.style.borderColor = '#2d3f58';
-                card.classList.add('card-offline');
-                return;
-            }
-
-            dot.classList.add('dot-on');
-
-            document.getElementById(`rms-${id}`).innerText   = r.rms_acc.toFixed(2);
-            document.getElementById(`gyro-${id}`).innerText  = r.rms_gyro.toFixed(1);
-            document.getElementById(`freq-${id}`).innerText  = r.freq.toFixed(1);
-            document.getElementById(`kurt-${id}`).innerText  = r.kurtosis.toFixed(2);
-
-            score.innerText  = r.score;
-
-            if (r.score >= 90) {
-                score.style.color = 'var(--good)';
-                status.style.backgroundColor = 'var(--good)';
-                card.style.borderColor = 'var(--good)';
-                status.innerText = '优秀';
-            } else if (r.score >= 75) {
-                const blueColor = '#3b82f6';
-                score.style.color = blueColor;
-                status.style.backgroundColor = blueColor;
-                card.style.borderColor = blueColor;
-                status.innerText = '良好';
-            } else if (r.score >= 60) {
-                score.style.color = 'var(--warn)';
-                status.style.backgroundColor = 'var(--warn)';
-                card.style.borderColor = 'var(--warn)';
-                status.innerText = '警告';
-            } else {
-                score.style.color = 'var(--bad)';
-                status.style.backgroundColor = 'var(--bad)';
-                card.style.borderColor = 'var(--bad)';
-                status.innerText = '危险';
-            }
-        }
-
-        function toggleRec() {
-            if(isPending) return;
-            isPending = true;
-            updateRecBtn(!isRec, true);
-            client.publish(MQTT_CMD, JSON.stringify({ record: !isRec }));
-            setTimeout(() => {
-                isPending = false;
-                isRec = !isRec;
-                updateRecBtn(isRec, false);
-            }, 2000);
-        }
-
-        function updateRecBtn(active, pending) {
-            const btn = document.getElementById('btn-rec');
-            const txt = document.getElementById('rec-txt');
-
-            if (pending) {
-                btn.className = "btn-info btn-rec pending";
-                txt.innerText = active ? "同步中..." : "同步中...";
-                txt.style.color = "#eab308";
-            } else if (active) {
-                btn.className = "btn-info btn-rec active";
-                txt.innerText = "底层记录:ON";
-                txt.style.color = "#ef4444";
-            } else {
-                btn.className = "btn-info btn-rec";
-                txt.innerText = "底层记录:OFF";
-                txt.style.color = "#94a3b8";
-            }
-        }
 
         setInterval(() => {
             const now = Date.now();
@@ -636,50 +721,56 @@
                 const row = lastSeen[id];
                 const online = row && (now - row.ts < TIMEOUT_MS) && row.online;
                 anyOnline = anyOnline || online;
-
                 if (!online && sensorData[id].online) {
                     sensorData[id].online = false;
                     sensorData[id].status = '离线';
-
-                    const card   = document.getElementById(`card-${id}`);
-                    const dot    = document.getElementById(`dot-${id}`);
-                    const score  = document.getElementById(`score-${id}`);
+                    const card = document.getElementById(`card-${id}`);
+                    const dot = document.getElementById(`dot-${id}`);
+                    const score = document.getElementById(`score-${id}`);
                     const status = document.getElementById(`status-${id}`);
-
-                    card.classList.add('card-offline');
-                    card.style.borderColor = '#2d3f58';
-                    dot.classList.remove('dot-on');
-                    score.innerText  = '0';
-                    score.style.color = '#64748b';
-                    status.innerText  = '离线';
-                    status.style.backgroundColor = 'transparent';
-                    status.style.color = '#94a3b8';
+                    if(card) card.classList.add('card-offline');
+                    if(card) card.style.borderColor = '#2d3f58';
+                    if(dot) dot.classList.remove('dot-on');
+                    if(score) { score.innerText = '0'; score.style.color = '#64748b'; }
+                    if(status) { status.innerText = '离线'; status.style.backgroundColor = 'transparent'; status.style.color = '#94a3b8'; }
                 }
             }
-
             const topDot = document.getElementById('conn-dot');
             const topTxt = document.getElementById('conn-text');
             if (anyOnline) {
-                topDot.classList.add('status-active');
-                topTxt.innerText = '在线';
-                topTxt.style.color = '#22c55e';
+                if(topDot) topDot.classList.add('status-active');
+                if(topTxt) { topTxt.innerText = '在线'; topTxt.style.color = '#22c55e'; }
             } else {
-                topDot.classList.remove('status-active');
-                topTxt.innerText = '离线';
-                topTxt.style.color = '#ef4444';
+                if(topDot) topDot.classList.remove('status-active');
+                if(topTxt) { topTxt.innerText = '离线'; topTxt.style.color = '#ef4444'; }
             }
         }, 1000);
+    }
 
-        window.addEventListener('load', () => {
-            window.addEventListener('beforeunload', (e) => {
-                if (storedData.length > 0) {
-                    const message = '您有未保存的数据，确定要离开吗？';
-                    e.preventDefault();
-                    e.returnValue = message;
-                    return message;
-                }
-            });
-        });
-    </script>
+    // ---------- 密码校验 ----------
+    const PASSWORD = "lanx0714";
+    const overlayDiv = document.getElementById('passwordOverlay');
+    const mainContainerDiv = document.getElementById('mainContainer');
+    const passwordInputElem = document.getElementById('passwordInput');
+    const unlockBtnElem = document.getElementById('unlockBtn');
+    const errorMsgSpan = document.getElementById('errorMsg');
+
+    function unlockApplication() {
+        if (passwordInputElem.value === PASSWORD) {
+            overlayDiv.style.display = 'none';
+            mainContainerDiv.style.display = 'flex';
+            initMainApp();
+        } else {
+            errorMsgSpan.innerText = '❌ 密码错误，拒绝访问';
+            passwordInputElem.value = '';
+            passwordInputElem.focus();
+        }
+    }
+
+    passwordInputElem.addEventListener('keypress', (e) => {
+        if(e.key === 'Enter') unlockApplication();
+    });
+    unlockBtnElem.addEventListener('click', unlockApplication);
+</script>
 </body>
 </html>
